@@ -72,8 +72,8 @@ export class PDFStateInitializer {
 
     ztoolkit.log("[PDFStateInitializer] 写入状态文件:", stateFile.path);
 
-    await Zotero.File.putContents(
-      stateFile,
+    await IOUtils.writeUTF8(
+      stateFile.path,
       JSON.stringify(defaultState, null, 2),
     );
 

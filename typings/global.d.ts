@@ -5,6 +5,8 @@ declare const _globalThis: {
   addon: typeof addon;
 };
 
+declare const IOUtils: any;
+
 declare type ZToolkit = ReturnType<
   typeof import("../src/utils/ztoolkit").createZToolkit
 >;
