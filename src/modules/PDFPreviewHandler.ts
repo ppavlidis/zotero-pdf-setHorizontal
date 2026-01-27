@@ -76,15 +76,19 @@ export class PDFPreviewHandler {
             "[Zotero Plugin] 未找到对应 reader 实例，itemID:",
             itemID,
           );
-          continue;
+          return;
         }
 
         const pdfApp = await this.waitForPDFViewer(reader);
 
         if (!pdfApp?.pdfViewer) {
           ztoolkit.log("[Zotero Plugin] PDFViewerApplication 未初始化");
-          continue;
+          return;
         }
+
+        ztoolkit.log(
+          `[Zotero Plugin] PDFViewer found. Current ScrollMode: ${pdfApp.pdfViewer.scrollMode}, Scale: ${pdfApp.pdfViewer.currentScaleValue}`,
+        );
 
         const applyPreferences = () => {
           try {
