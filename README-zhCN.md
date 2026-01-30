@@ -28,6 +28,3 @@
 
 ![1745157192657](image/README/1745157192657.gif)
 
-## 赞助
-
-<img src="image/README/sponsor.png" width="50%" height="50%">

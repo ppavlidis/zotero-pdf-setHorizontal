@@ -33,6 +33,4 @@ This is a plugin for [Zotero](https://www.zotero.org/).
 
 Use this code under AGPL. No warranties are provided. Keep the laws of your locality in mind!
 
-## Sponsor
 
-<img src="image/README/sponsor.png" width="50%" height="50%">
