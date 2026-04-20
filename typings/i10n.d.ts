@@ -32,10 +32,14 @@ export type FluentMessageId =
   | 'scrollModeHorizontal'
   | 'scrollModeVertical'
   | 'scrollModeWrapped'
+  | 'spreadModeEven'
+  | 'spreadModeNone'
+  | 'spreadModeOdd'
   | 'startup-begin'
   | 'startup-finish'
   | 'tabpanel-lib-tab-label'
   | 'tabpanel-reader-tab-label'
   | 'title1'
   | 'title2'
-  | 'title3';
+  | 'title3'
+  | 'title4';

@@ -1,18 +1,39 @@
-import { getLocaleID, getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
-const enable = getPref("pdfPreview.enabled");
+
+// PDF.js ScrollMode / SpreadMode are numeric enums. The prefs are declared as
+// ints in prefs.js, but XUL <menulist native="true"> with a preference= attribute
+// routes through Zotero.Prefs.set, which calls setStringPref for string
+// elem.value. That can leave the pref stored as a string like "1", at which
+// point PDF.js's setter throws because Object.values(ScrollMode).includes("1")
+// is false. So every read here is coerced.
+const toNumber = (v: unknown): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const toScaleString = (v: unknown): string => {
+  // PDF.js accepts numeric strings like "1.5" or keywords: "auto",
+  // "page-actual", "page-fit", "page-width", "page-height".
+  // Zotero Reader's "Zoom to Page Height" menu item uses `page-fit`
+  // (see zotero/reader pdf-view.js `zoomPageHeight`), so translate the
+  // legacy `page-height` value we used to ship with.
+  let s: string;
+  if (typeof v === "string") s = v;
+  else if (typeof v === "number" && Number.isFinite(v)) s = String(v);
+  else s = "page-fit";
+  if (s === "page-height") s = "page-fit";
+  return s;
+};
 
 export class PDFPreviewHandler {
   private static initialized = false;
   private static notifierID?: string;
 
   static init() {
-    ztoolkit.log("预置首选项 before", getPref("pdfPreview.enabled"));
-    ztoolkit.log("预置首选项 enable before", getPref("pdfPreview.enabled"));
-    if (this.initialized || !getPref("pdfPreview.enabled")) return;
+    // Always register; check the enabled pref at event time so toggling
+    // the checkbox takes effect without a Zotero restart.
+    if (this.initialized) return;
     this.initialized = true;
-    ztoolkit.log("预置首选项 after", getPref("pdfPreview.enabled"));
-    ztoolkit.log("PDFPreviewHandler");
+    ztoolkit.log("[SetPDFView] PDFPreviewHandler initialized");
 
     this.notifierID = Zotero.Notifier.registerObserver(
       {
@@ -22,27 +43,15 @@ export class PDFPreviewHandler {
           ids: string[],
           extraData: { [key: string]: any },
         ) => {
-          ztoolkit.log(
-            `[Zotero Plugin] Tab 事件触发: event=${event}, ids=${JSON.stringify(ids)}, extraData=${JSON.stringify(extraData)}`,
-          );
-
-          if (event === "add" && type === "tab") {
-            const tabID = ids[0];
-            const tabInfo = extraData[tabID];
-            if (
-              tabInfo?.type === "reader" &&
-              typeof tabInfo.itemID === "number"
-            ) {
-              ztoolkit.log(
-                "[Zotero Plugin] Reader tab 被添加，处理 itemID:",
-                tabInfo.itemID,
-              );
-              await this.handlePDFOpen([tabInfo.itemID], tabID);
-            } else {
-              ztoolkit.log(
-                "[Zotero Plugin] Reader tab 添加但缺少 itemID，跳过",
-              );
-            }
+          if (event !== "add" || type !== "tab") return;
+          if (!getPref("pdfPreview.enabled")) return;
+          const tabID = ids[0];
+          const tabInfo = extraData[tabID];
+          if (
+            tabInfo?.type === "reader" &&
+            typeof tabInfo.itemID === "number"
+          ) {
+            await this.handlePDFOpen(tabInfo.itemID, tabID);
           }
         }) as unknown as _ZoteroTypes.Notifier.Notify,
       },
@@ -50,105 +59,93 @@ export class PDFPreviewHandler {
     );
   }
 
-  private static async handlePDFOpen(itemIDs: number[], tabID?: string) {
-    const enable = getPref("pdfPreview.enabled");
-    ztoolkit.log("handle PDFOpen enable:", enable);
-    if (!enable) {
-      ztoolkit.log("PDF 预览功能未启用，跳过处理");
-      return;
-    }
-    for (const itemID of itemIDs) {
-      try {
-        const item = await Zotero.Items.getAsync(itemID);
-        if (!item?.isAttachment() || !(item as any).isPDFAttachment()) {
-          ztoolkit.log("[Zotero Plugin] 非 PDF 附件，跳过:", itemID);
-          continue;
-        }
-
-        // 等待 tab 渲染
-        await Zotero.Promise.delay(1000);
-
-        const reader = tabID
-          ? Zotero.Reader.getByTabID(tabID)
-          : Zotero.Reader.getByItemID(itemID);
-        if (!reader) {
-          ztoolkit.log(
-            "[Zotero Plugin] 未找到对应 reader 实例，itemID:",
-            itemID,
-          );
-          return;
-        }
-
-        const pdfApp = await this.waitForPDFViewer(reader);
-
-        if (!pdfApp?.pdfViewer) {
-          ztoolkit.log("[Zotero Plugin] PDFViewerApplication 未初始化");
-          return;
-        }
-
-        ztoolkit.log(
-          `[Zotero Plugin] PDFViewer found. Current ScrollMode: ${pdfApp.pdfViewer.scrollMode}, Scale: ${pdfApp.pdfViewer.currentScaleValue}`,
-        );
-
-        const applyPreferences = () => {
-          try {
-            // 如果已经设置过，就不再重复设置
-            if (
-              pdfApp.pdfViewer.currentScaleValue ===
-                getPref("pdfPrefs.scale") &&
-              pdfApp.pdfViewer.scrollMode === getPref("pdfPrefs.scrollMode")
-            ) {
-              ztoolkit.log("[Zotero Plugin] 设置已经应用，跳过");
-              return;
-            }
-
-            pdfApp.pdfViewer.currentScaleValue = getPref("pdfPrefs.scale");
-            pdfApp.pdfViewer.scrollMode = getPref("pdfPrefs.scrollMode");
-
-            ztoolkit.log(
-              "[Zotero Plugin] 设置 scrollMode = " +
-                getPref("pdfPrefs.scrollMode") +
-                ", scale = " +
-                getPref("pdfPrefs.scale") +
-                "，zoom = page-height",
-            );
-          } catch (e) {
-            ztoolkit.log("[Zotero Plugin] 设置阅读器偏好失败:", e);
-          }
-        };
-
-        // 延迟处理避免闪烁问题
-        const applyDelayedPreferences = () => {
-          // 延迟足够时间，以确保 Zotero 完成状态写入操作
-          setTimeout(() => {
-            try {
-              // 在此时设置 PDF 偏好
-              applyPreferences(); // 统一调用设置逻辑
-            } catch (e) {
-              ztoolkit.log("[Zotero Plugin] 延迟设置失败:", e);
-            }
-          }, 300); // 延迟时间，确保 Zotero 写入操作完成
-        };
-
-        if (pdfApp._eventBus && !pdfApp.pdfViewer._pagesInitialized) {
-          ztoolkit.log("[Zotero Plugin] 页面未初始化，监听 pagesinit");
-          pdfApp._eventBus.on("pagesinit", () => {
-            ztoolkit.log("[Zotero Plugin] 页面初始化完成，应用设置");
-            applyDelayedPreferences(); // 延迟应用设置
-          });
-        } else {
-          ztoolkit.log("[Zotero Plugin] 页面已初始化，立即应用设置");
-          applyDelayedPreferences(); // 直接延迟应用设置
-        }
-      } catch (e) {
-        ztoolkit.log(`处理 PDF 打开失败 itemID=${itemID}:`, e);
+  private static async handlePDFOpen(itemID: number, tabID: string) {
+    try {
+      const item = await Zotero.Items.getAsync(itemID);
+      if (!item?.isAttachment() || !(item as any).isPDFAttachment?.()) {
+        return;
       }
+
+      const reader = Zotero.Reader.getByTabID(tabID);
+      if (!reader) {
+        ztoolkit.log("[SetPDFView] reader not found for tab", tabID);
+        return;
+      }
+
+      const pdfApp = await this.waitForPDFViewer(reader);
+      if (!pdfApp?.pdfViewer || !pdfApp.eventBus) {
+        ztoolkit.log("[SetPDFView] PDFViewerApplication not ready");
+        return;
+      }
+
+      const apply = () => this.applyPreferences(pdfApp);
+
+      // Apply once immediately after pages initialize, then again after a
+      // short delay — Zotero Reader's own _setState runs inside
+      // _handleDocumentInit (before pagesinit), but it also writes state via
+      // _handleViewAreaUpdate which can reset values if our first apply
+      // races with its initial fire. The second apply covers that.
+      if (pdfApp.pdfViewer._pagesInitialized) {
+        apply();
+        setTimeout(apply, 400);
+      } else {
+        pdfApp.eventBus.on("pagesinit", () => {
+          apply();
+          setTimeout(apply, 400);
+        });
+      }
+    } catch (e) {
+      ztoolkit.log("[SetPDFView] handlePDFOpen error", e);
+    }
+  }
+
+  private static applyPreferences(pdfApp: any) {
+    const scrollMode = toNumber(getPref("pdfPrefs.scrollMode"));
+    const spreadMode = toNumber(getPref("pdfPrefs.spreadMode"));
+    const scale = toScaleString(getPref("pdfPrefs.scale"));
+
+    ztoolkit.log(
+      `[SetPDFView] applying scrollMode=${scrollMode} spreadMode=${spreadMode} scale=${scale}`,
+    );
+
+    // Prefer the PDF.js event bus so Zotero Reader's state-tracking side
+    // effects (view-menu checkmarks, _handleViewAreaUpdate -> state save)
+    // run. Fall back to direct property assignment if the bus is missing.
+    try {
+      if (pdfApp.eventBus?.dispatch) {
+        pdfApp.eventBus.dispatch("switchscrollmode", {
+          source: pdfApp,
+          mode: scrollMode,
+        });
+        pdfApp.eventBus.dispatch("switchspreadmode", {
+          source: pdfApp,
+          mode: spreadMode,
+        });
+      } else {
+        pdfApp.pdfViewer.scrollMode = scrollMode;
+        pdfApp.pdfViewer.spreadMode = spreadMode;
+      }
+    } catch (e) {
+      ztoolkit.log("[SetPDFView] scroll/spread dispatch failed", e);
+      try {
+        pdfApp.pdfViewer.scrollMode = scrollMode;
+        pdfApp.pdfViewer.spreadMode = spreadMode;
+      } catch (e2) {
+        ztoolkit.log("[SetPDFView] fallback scroll/spread set failed", e2);
+      }
+    }
+
+    // Scale: currentScaleValue is a string setter that triggers scalechanging.
+    try {
+      pdfApp.pdfViewer.currentScaleValue = scale;
+    } catch (e) {
+      ztoolkit.log("[SetPDFView] scale set failed", e);
     }
   }
 
   private static waitForPDFViewer(
     reader: _ZoteroTypes.ReaderInstance,
-    timeout = 5000,
+    timeout = 10000,
   ): Promise<any> {
     return new Promise((resolve) => {
       const startTime = Date.now();
@@ -160,50 +157,11 @@ export class PDFPreviewHandler {
         } else if (Date.now() - startTime < timeout) {
           setTimeout(check, 100);
         } else {
-          ztoolkit.log("等待 PDFViewer 超时");
+          ztoolkit.log("[SetPDFView] timeout waiting for PDFViewer");
           resolve(null);
         }
       };
       check();
     });
-  }
-
-  private static applyPreviewSettings(pdfViewer: any, retry = 0) {
-    const scrollMode = getPref("pdfPrefs.scrollMode");
-    const scale = getPref("pdfPrefs.scale");
-
-    ztoolkit.log("开始等待 PDFViewer 初始化");
-    ztoolkit.log("PDFViewer 已初始化");
-    ztoolkit.log("======================================");
-    ztoolkit.log(`PDF 预览设置: scrollMode=${scrollMode}, scale=${scale}`);
-    ztoolkit.log("PDF 预览设置gtepref", getPref("pdfPrefs.scrollMode"));
-    ztoolkit.log("PDF 预览设置gtepref", getPref("pdfPrefs.scale"));
-    try {
-      ztoolkit.log(`应用 PDF 设置，尝试次数: ${retry}`);
-
-      if (retry > 2) {
-        ztoolkit.log("超过最大重试次数，放弃设置");
-        return;
-      }
-
-      if (typeof pdfViewer.setScrollMode === "function") {
-        // pdfViewer.setScrollMode(1);
-        pdfViewer.setScrollMode(scrollMode);
-        ztoolkit.log("调用 setScrollMode(1) 成功，设置为横向");
-      } else {
-        ztoolkit.log("pdfViewer.setScrollMode 不存在或不是函数");
-      }
-
-      if (typeof pdfViewer.setScale === "function") {
-        // pdfViewer.setScale("page-height");
-        pdfViewer.setScale(scale);
-        ztoolkit.log("调用 setScale('page-height') 成功");
-      } else {
-        ztoolkit.log("pdfViewer.setScale 不存在或不是函数");
-      }
-    } catch (e) {
-      ztoolkit.log(`应用 PDF 设置失败 (重试 ${retry})`, e);
-      setTimeout(() => this.applyPreviewSettings(pdfViewer, retry + 1), 500);
-    }
   }
 }

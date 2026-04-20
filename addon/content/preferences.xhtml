@@ -71,13 +71,38 @@
         native="true"
         id="__addonRef__-scaleMode"
         preference="__prefsPrefix__.pdfPrefs.scale"
-        value="page-height"
+        value="page-fit"
         style="min-width: 200px"
       >
         <menupopup>
-          <menuitem value="page-height" data-l10n-id="scalePageHeight" />
+          <menuitem value="page-fit" data-l10n-id="scalePageHeight" />
           <menuitem value="page-width" data-l10n-id="scalePageWidth" />
           <menuitem value="auto" data-l10n-id="scaleAuto" />
+        </menupopup>
+      </menulist>
+    </vbox>
+  </groupbox>
+  <groupbox style="margin-bottom: 15px">
+    <caption>
+      <label>
+        <html:h2
+          data-l10n-id="title4"
+          style="margin: 0; font-size: 1.2em"
+        ></html:h2>
+      </label>
+    </caption>
+    <vbox>
+      <menulist
+        native="true"
+        id="__addonRef__-spreadMode"
+        preference="__prefsPrefix__.pdfPrefs.spreadMode"
+        value="0"
+        style="min-width: 200px"
+      >
+        <menupopup>
+          <menuitem value="0" data-l10n-id="spreadModeNone" />
+          <menuitem value="1" data-l10n-id="spreadModeOdd" />
+          <menuitem value="2" data-l10n-id="spreadModeEven" />
         </menupopup>
       </menulist>
     </vbox>

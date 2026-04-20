@@ -69,12 +69,22 @@ export class BasicExampleFactory {
 
   @example
   static registerPrefs() {
-    Zotero.PreferencePanes.register({
-      pluginID: addon.data.config.addonID,
-      src: rootURI + "content/preferences.xhtml",
-      label: getString("prefs-title"),
-      image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`,
-    });
+    const chromeBase = `chrome://${addon.data.config.addonRef}/content/`;
+    // Stable id prevents duplicate sidebar entries if register() is called
+    // more than once (e.g. after a dev reload). Zotero throws on duplicate
+    // ids, which we swallow.
+    try {
+      (Zotero.PreferencePanes.register as any)({
+        pluginID: addon.data.config.addonID,
+        id: `${addon.data.config.addonRef}-pane`,
+        src: chromeBase + "preferences.xhtml",
+        scripts: [chromeBase + "prefs-loader.js"],
+        label: getString("prefs-title"),
+        image: chromeBase + "icons/favicon.png",
+      });
+    } catch (e) {
+      ztoolkit.log("[registerPrefs] already registered, skipping:", e);
+    }
   }
 }
 

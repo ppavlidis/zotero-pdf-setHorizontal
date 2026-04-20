@@ -11,8 +11,19 @@ import { createZToolkit } from "./utils/ztoolkit";
 
 import { PDFPreviewHandler } from "./modules/PDFPreviewHandler";
 import { PDFStateInitializer } from "./modules/pdfstateinitializer";
-import { getPref } from "./utils/prefs";
+import { getPref, setPref } from "./utils/prefs";
 import { PDFHandToolHandler } from "./modules/PDFHandToolHandler";
+
+function migratePrefs() {
+  // Versions <= 0.0.7 stored "page-height" for the Zoom to Page Height
+  // option. Zotero Reader's own "Zoom to Page Height" uses `page-fit`
+  // internally (see zotero/reader pdf-view.js `zoomPageHeight`), and our
+  // menulist no longer offers `page-height` as a value, so an existing
+  // stored `page-height` would leave the dropdown blank. Rewrite it.
+  if (getPref("pdfPrefs.scale") === "page-height") {
+    setPref("pdfPrefs.scale", "page-fit");
+  }
+}
 
 async function onStartup() {
   await Promise.all([
@@ -22,6 +33,7 @@ async function onStartup() {
   ]);
 
   initLocale();
+  migratePrefs();
 
   BasicExampleFactory.registerPrefs();
 

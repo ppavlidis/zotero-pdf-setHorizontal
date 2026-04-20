@@ -31,4 +31,13 @@ scaleAuto =
 handToolEnabled =
     .label = 自动开启手型工具✋🏼
 
-info = 🚨推荐使用"当新建条目时自动设置"。同时勾选"每次打开标签页重设"和"当新添加条目时自动设置"，有几率导致条目无法打开。
+title4 = 页面布局
+
+spreadModeNone =
+    .label = 单页
+spreadModeOdd =
+    .label = 双页（1–2、3–4、5–6…）— 对应"视图"菜单的"Odd Spreads"
+spreadModeEven =
+    .label = 双页（第 1 页单独；2–3、4–5…）— 对应"视图"菜单的"Even Spreads"
+
+info = "每次打开标签页重设"会在每次打开 PDF 时重新应用设置，对已导入的旧条目也生效；"仅当新添加条目时自动设置"只在条目首次创建时写入默认值一次。两个选项可以同时启用。

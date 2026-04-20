@@ -1,19 +1,20 @@
-pref-title = Addon Template Example
+pref-title = Set Horizontal
 pref-enable =
     .label = Enable
 pref-input = Input
 pref-help = { $name } Build { $version } { $time }
 
-basic-title = Automatically Set PDF View When:
-title3 = Other Settings
+basic-title = Automatically Set PDF View:
 title1 = Scroll Mode
 title2 = Scale Mode
+title3 = Other Settings
+title4 = Page Layout
+
 pdfPreviewEnabled =
-    .label = Everytime Open Tab
+    .label = Every time a tab is opened
 
 pdfStateInitEnabled =
-    .label = Item First Added 
-
+    .label = When an item is first added
 
 scrollModeHorizontal =
     .label = Horizontal Scrolling
@@ -22,7 +23,6 @@ scrollModeVertical =
 scrollModeWrapped =
     .label = Wrapped Scrolling
 
-
 scalePageHeight =
     .label = Zoom to Page Height
 scalePageWidth =
@@ -30,7 +30,14 @@ scalePageWidth =
 scaleAuto =
     .label = Automatically Resize
 
+spreadModeNone =
+    .label = Single Page
+spreadModeOdd =
+    .label = Two Pages (1–2, 3–4, 5–6, …) — matches "Odd Spreads" in the View menu
+spreadModeEven =
+    .label = Two Pages (1 alone; 2–3, 4–5, …) — matches "Even Spreads" in the View menu
+
 handToolEnabled =
     .label = Enable Hand Tool Automatically
 
-info = 🚨"Item First Added" is recommended. Enable "Everytime Open Tab" and "Itme First Added" in the same time may occasionally cause items to fail to open. 
+info = "Every time a tab is opened" re-applies these settings whenever you open any PDF, so they stick even on PDFs you imported before installing this plugin. "When an item is first added" only writes the defaults once, when an item is created. Both options are safe to enable together.

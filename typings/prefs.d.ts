@@ -14,6 +14,7 @@ declare namespace _ZoteroTypes {
       "pdfPrefs.scrollMode": number;
       "pdfPrefs.scale": string;
       "pdfHandTool.enabled": boolean;
+      "pdfPrefs.spreadMode": number;
     };
   }
 }

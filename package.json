@@ -1,9 +1,9 @@
 {
-  "name": "set-horizontal-scrolling",
-  "version": "0.0.4",
-  "description": "Set horizontal scrolling and zooming to the page height as defaults.",
+  "name": "set-pdf-view-fork",
+  "version": "0.0.9",
+  "description": "Set default PDF view options in Zotero 7–9: scroll mode, scale, page layout (spread), hand tool. Fork of qiwei-ma/zotero-pdf-setHorizontal with Zotero 9 support, a Page Layout (single / two-pages) option, and fixes for stale prefs and a blank preferences pane.",
   "config": {
-    "addonName": "Set HorizontalScroll",
+    "addonName": "Set PDF View (fork)",
     "addonID": "pdfsethorizontalscroll@euclpts.com",
     "addonRef": "pdfsethorizontalscroll",
     "addonInstance": "pdfsethorizontalscroll",
@@ -11,13 +11,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qiwei-ma/zotero-pdf-setHorizontal.git"
+    "url": "git+https://github.com/ppavlidis/zotero-pdf-setHorizontal.git"
   },
-  "author": "qiwei",
+  "author": "ppavlidis (fork maintainer); originally qiwei-ma",
   "bugs": {
-    "url": "https://github.com/qiwei-ma/zotero-pdf-setHorizontal/issues"
+    "url": "https://github.com/ppavlidis/zotero-pdf-setHorizontal/issues"
   },
-  "homepage": "https://github.com/qiwei-ma/zotero-pdf-setHorizontal#readme",
+  "homepage": "https://github.com/ppavlidis/zotero-pdf-setHorizontal#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",

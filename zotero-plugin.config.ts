@@ -7,11 +7,11 @@ export default defineConfig({
   name: pkg.config.addonName,
   id: pkg.config.addonID,
   namespace: pkg.config.addonRef,
-  updateURL: `https://github.com/qiwei-ma/zotero-pdf-setHorizontal/releases/download/release/${
+  updateURL: `https://github.com/ppavlidis/zotero-pdf-setHorizontal/releases/download/release/${
     pkg.version.includes("-") ? "update-beta.json" : "update.json"
   }`,
   xpiDownloadLink:
-    "https://github.com/qiwei-ma/zotero-pdf-setHorizontal/releases/download/v{{version}}/{{xpiName}}.xpi",
+    "https://github.com/ppavlidis/zotero-pdf-setHorizontal/releases/download/v{{version}}/{{xpiName}}.xpi",
 
   build: {
     assets: ["addon/**/*.*"],

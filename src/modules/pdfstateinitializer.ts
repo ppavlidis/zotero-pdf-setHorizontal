@@ -1,18 +1,15 @@
 import { getPref } from "../utils/prefs";
 
-const scrollMode = getPref("pdfPrefs.scrollMode");
-const scale = getPref("pdfPrefs.scale");
-const zoom = getPref("pdfPrefs.scale");
-const enable = getPref("pdfStateInit.enabled");
-
 export class PDFStateInitializer {
   private static initialized = false;
 
   static init() {
-    if (this.initialized || !enable) return;
+    // Always register the notifier; check the enabled pref at event time
+    // so toggling the checkbox takes effect without a restart.
+    if (this.initialized) return;
     this.initialized = true;
 
-    ztoolkit.log("PDFStateInitializer 初始化");
+    ztoolkit.log("PDFStateInitializer initialized");
 
     Zotero.Notifier.registerObserver(
       {
@@ -23,6 +20,7 @@ export class PDFStateInitializer {
           extraData: Record<string, any>,
         ) => {
           if (event !== "add" || type !== "item") return;
+          if (!getPref("pdfStateInit.enabled")) return;
 
           for (const id of ids) {
             try {
@@ -52,11 +50,25 @@ export class PDFStateInitializer {
   }
 
   private static async writeDefaultState(item: Zotero.Item) {
+    // Read prefs fresh on each write so pref changes take effect immediately.
+    // Coerce numeric prefs to numbers — XUL menulist binding can store them
+    // as strings, which would produce invalid state values.
+    const toNum = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    // Legacy value `page-height` is not what Zotero Reader's menu means by
+    // "Zoom to Page Height" — it uses `page-fit`. Translate on read.
+    const rawScale = getPref("pdfPrefs.scale");
+    let scale =
+      typeof rawScale === "string" && rawScale ? rawScale : "page-fit";
+    if (scale === "page-height") scale = "page-fit";
     const defaultState = {
       pageIndex: 0,
-      scrollMode: scrollMode,
+      scrollMode: toNum(getPref("pdfPrefs.scrollMode")),
+      spreadMode: toNum(getPref("pdfPrefs.spreadMode")),
       scale: scale,
-      zoom: zoom,
+      zoom: scale,
       scrollLeft: 0,
       scrollTop: 0,
     };

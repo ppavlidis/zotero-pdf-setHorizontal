@@ -45,6 +45,16 @@ export function registerPreferenceListeners(window: Window) {
     setPref("pdfPrefs.scale", value);
   });
 
+  // 监听 spreadMode 下拉框的变化
+  const spreadMode = doc.querySelector<HTMLInputElement>(
+    `#${config.addonRef}-spreadMode`,
+  );
+  spreadMode?.addEventListener("command", (e: Event) => {
+    const value = Number((e.target as HTMLInputElement).value);
+    ztoolkit.log("【调试】Spread Mode 被设置为：", value);
+    setPref("pdfPrefs.spreadMode", value);
+  });
+
   // 监听 handTool 复选框的变化
   const handTool = doc.querySelector<HTMLInputElement>(
     `#${config.addonRef}-enableHandTool`,

@@ -5,7 +5,8 @@ export class PDFHandToolHandler {
   private static notifierID?: string;
 
   static init() {
-    if (this.initialized || !getPref("pdfHandTool.enabled")) return;
+    // Always register; check the enabled pref at event time.
+    if (this.initialized) return;
     this.initialized = true;
     ztoolkit.log("PDFHandToolHandler initialized");
 
@@ -18,6 +19,7 @@ export class PDFHandToolHandler {
           extraData: { [key: string]: any },
         ) => {
           if (event === "add" && type === "tab") {
+            if (!getPref("pdfHandTool.enabled")) return;
             const tabID = ids[0];
             const tabInfo = extraData[tabID];
             if (
